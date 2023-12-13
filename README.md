@@ -1,2 +1,2 @@
 # myRfunctions
-Collection of useful R functions and scripts
+A collection of useful R functions and scripts
