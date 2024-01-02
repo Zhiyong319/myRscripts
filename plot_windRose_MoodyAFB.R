@@ -1,16 +1,16 @@
+# set the environment
 rm(list = ls())
-
 setwd(dirname(rstudioapi::getActiveDocumentContext()$path))
 
 library(ggplot2)
 library(openair)
 
 # read raw data
-rawdat2015 <-read.csv('C:/Users/zwu/Data/meteo/74781013857_2015.csv')
-rawdat2016 <-read.csv('C:/Users/zwu/Data/meteo/74781013857_2016.csv')
-rawdat2017 <-read.csv('C:/Users/zwu/Data/meteo/74781013857_2017.csv')
-rawdat2018 <-read.csv('C:/Users/zwu/Data/meteo/74781013857_2018.csv')
-rawdat2019 <-read.csv('C:/Users/zwu/Data/meteo/74781013857_2019.csv')
+rawdat2015 <-read.csv('74781013857_2015.csv')
+rawdat2016 <-read.csv('74781013857_2016.csv')
+rawdat2017 <-read.csv('74781013857_2017.csv')
+rawdat2018 <-read.csv('74781013857_2018.csv')
+rawdat2019 <-read.csv('74781013857_2019.csv')
 cols <- c("DATE","WND","REPORT_TYPE" )
 rawdat <- rbind(rawdat2015[,cols],rawdat2016[,cols],rawdat2017[,cols],rawdat2018[,cols],rawdat2019[,cols])
 
