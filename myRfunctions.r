@@ -15,6 +15,120 @@ period2 <-c('Annual','Jan','Feb','Mar','Apr','May','Jun','Jul','Aug','Sep','Oct'
 # state.name # state full names 
 
 #### Collection of functions ####
+### calculate the statistics of y at each bin of x
+y_vs_binned_x <- function(y,x,xbins) {
+  nbin <- length(xbins) -1
+  
+  basicStat <- c('n', 'mean', 'median', 'sd', 'se')
+  ystat <- data.frame(matrix(ncol = length( basicStat), nrow = nbin))
+  colnames(ystat) <- basicStat
+  
+  for (ibin in 1:nbin) {
+    ybin <- y[x>=xbins[ibin] & x<=xbins[ibin+1]]
+    
+    ystat[ibin,1] <- sum(!is.na(ybin))        # n (exclude NAs)
+    ystat[ibin,2] <- mean(ybin, na.rm=TRUE)   # mean
+    ystat[ibin,3] <- median(ybin, na.rm=TRUE) # median
+    ystat[ibin,4] <- sd(ybin, na.rm=TRUE)     # standard deviation
+    ystat[ibin,5] <- sd(ybin, na.rm=TRUE)/sqrt(sum(!is.na(ybin)))  # standard error of the mean
+  }
+  
+  return(ystat)
+  
+}
+
+### calculate the middle (mean) of x bins
+bin_center <- function(xbins) {
+  nbin <- length(xbins) -1
+  bin_center <- matrix(NA, nrow=nbin, ncol=1)
+  for (ibin in 1:nbin) {
+    bin_center[ibin] <- (xbins[ibin] + xbins[ibin+1])/2
+  }
+  return(bin_center)
+}
+
+### sampe code to plot y binned as a fucntion of x 
+# ivar <- 2
+# xbins <- seq(0.5,12.5)
+# xbin_center <- bin_center(xbins)
+# vdStat <- y_vs_binned_x(depData$Vd,depData[,ivar],xbins)
+# plot(xbin_center, vdStat$mean, xlab=names(depData)[ivar], ylab="Vd", type="b", ylim=c(0,ceiling(max(vdStat$mean+vdStat$se)*10)/10), cex=1)
+# # Add error bars
+# arrows(x0=xbin_center, y0=vdStat$mean-vdStat$se, x1=xbin_center, y1=vdStat$mean+vdStat$se, code=3, angle=90, length=0.1)
+
+### bootstrap sampling
+bootsample <- function(z) {
+  n <- length(z)
+  samples <- z[ceiling(runif(n,0,n))]
+  return(samples)
+}
+
+### regression model evaluation
+bias <- function(y1,y2) mean(y1-y2)
+mae <- function(y1,y2) mean(abs(y1-y2))
+mse <- function(y1,y2) mean((y1-y2)^2)
+rmse <- function(y1,y2) sqrt(mean((y1-y2)^2))
+AdjustedR2 <- function(pred,obs,n,p) {
+  R2 <- cor(pred,obs)^2
+  df.int <- 1
+  rdf <- n-p-1
+  AdjR2 <-  1 - (1 - R2) * ((n - df.int)/rdf)
+  return(AdjR2)
+}
+
+### Euclidean distance between two vectors, A and B
+euclidean <- function(a, b) sqrt(sum((a - b)^2))
+
+### Quadratic Roots
+Quadratic_Formula <- function(a,b,c){
+  
+  delta <- b^2-4*a*c
+  x1 = (-b+sqrt(delta))/(2*a)
+  x2 = (-b-sqrt(delta))/(2*a)
+  # return(cbind(x1,x2)) 
+  return(data.frame(x1=x1,x2=x2)) 
+}
+
+quadraticRoots <- function(a, b, c) {
+  
+  print(paste0("You have chosen the quadratic equation ", a, "x^2 + ", b, "x + ", c, "."))
+  
+  discriminant <- (b^2) - (4*a*c)
+  
+  if(discriminant < 0) {
+    return(paste0("This quadratic equation has no real numbered roots."))
+  }
+  else if(discriminant > 0) {
+    x_int_plus <- (-b + sqrt(discriminant)) / (2*a)
+    x_int_neg <- (-b - sqrt(discriminant)) / (2*a)
+    
+    return(paste0("The two x-intercepts for the quadratic equation are ",
+                  format(round(x_int_plus, 5), nsmall = 5), " and ",
+                  format(round(x_int_neg, 5), nsmall = 5), "."))
+  }
+  else #discriminant = 0  case
+    x_int <- (-b) / (2*a)
+  return(paste0("The quadratic equation has only one root. This root is ",
+                x_int))
+}
+
+### pearsonhartley
+pearsonhartley <- function(phi,alpha,df1,df2) {
+  
+  b<- 0.5*phi*phi*(1+df1)
+  q<- qf(1-alpha,df1,df2)
+  y<- 1-1/(1+df1*q/df2)
+  p<- pbeta(y,df1/2,df2/2)
+  p1<- 1
+  jmax<-1000
+  for (j in 1:jmax) {
+    p1<- p1*b/j
+    p <- p+pbeta(y,j+df1/2,df2/2)*p1
+  }
+  1-p*exp(-b)
+  
+}
+
 state.name2abb <- function(state_vector) {
   for (i in 1:length(state.name)) {
     state_vector[state_vector==state.name[i]] <- state.abb[i]
