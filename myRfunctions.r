@@ -3,85 +3,9 @@
 #
 # Author: Zhiyong Wu (zhiyong319@gmail.com)
 
-#### Collection of data ####
-# time
-date_start <- c(  1, 1, 32, 60,  91, 121, 152, 182, 213, 244, 274, 305, 335)
-date_end   <- c(365,31, 59, 90, 120, 151, 181, 212, 243, 273, 304, 334, 365)
-period <- sprintf("%02d", 0:12) 
-period2 <-c('Annual','Jan','Feb','Mar','Apr','May','Jun','Jul','Aug','Sep','Oct','Nov','Dec')
-
-# US states
-# state.abb  # state abbreviations 
-# state.name # state full names 
-
-#### Collection of functions ####
-### calculate the statistics of y at each bin of x
-y_vs_binned_x <- function(y,x,xbins) {
-  nbin <- length(xbins) -1
-  
-  basicStat <- c('n', 'mean', 'median', 'sd', 'se')
-  ystat <- data.frame(matrix(ncol = length( basicStat), nrow = nbin))
-  colnames(ystat) <- basicStat
-  
-  for (ibin in 1:nbin) {
-    ybin <- y[x>=xbins[ibin] & x<=xbins[ibin+1]]
-    
-    ystat[ibin,1] <- sum(!is.na(ybin))        # n (exclude NAs)
-    ystat[ibin,2] <- mean(ybin, na.rm=TRUE)   # mean
-    ystat[ibin,3] <- median(ybin, na.rm=TRUE) # median
-    ystat[ibin,4] <- sd(ybin, na.rm=TRUE)     # standard deviation
-    ystat[ibin,5] <- sd(ybin, na.rm=TRUE)/sqrt(sum(!is.na(ybin)))  # standard error of the mean
-  }
-  
-  return(ystat)
-  
-}
-
-### calculate the middle (mean) of x bins
-bin_center <- function(xbins) {
-  nbin <- length(xbins) -1
-  bin_center <- matrix(NA, nrow=nbin, ncol=1)
-  for (ibin in 1:nbin) {
-    bin_center[ibin] <- (xbins[ibin] + xbins[ibin+1])/2
-  }
-  return(bin_center)
-}
-
-### sampe code to plot y binned as a fucntion of x 
-# ivar <- 2
-# xbins <- seq(0.5,12.5)
-# xbin_center <- bin_center(xbins)
-# vdStat <- y_vs_binned_x(depData$Vd,depData[,ivar],xbins)
-# plot(xbin_center, vdStat$mean, xlab=names(depData)[ivar], ylab="Vd", type="b", ylim=c(0,ceiling(max(vdStat$mean+vdStat$se)*10)/10), cex=1)
-# # Add error bars
-# arrows(x0=xbin_center, y0=vdStat$mean-vdStat$se, x1=xbin_center, y1=vdStat$mean+vdStat$se, code=3, angle=90, length=0.1)
-
-### bootstrap sampling
-bootsample <- function(z) {
-  n <- length(z)
-  samples <- z[ceiling(runif(n,0,n))]
-  return(samples)
-}
-
-### regression model evaluation
-bias <- function(y1,y2) mean(y1-y2)
-mae <- function(y1,y2) mean(abs(y1-y2))
-mse <- function(y1,y2) mean((y1-y2)^2)
-rmse <- function(y1,y2) sqrt(mean((y1-y2)^2))
-AdjustedR2 <- function(pred,obs,n,p) {
-  R2 <- cor(pred,obs)^2
-  df.int <- 1
-  rdf <- n-p-1
-  AdjR2 <-  1 - (1 - R2) * ((n - df.int)/rdf)
-  return(AdjR2)
-}
-
-### Euclidean distance between two vectors, A and B
-euclidean <- function(a, b) sqrt(sum((a - b)^2))
-
+###################################### Math ######################################
 ### Quadratic Roots
 Quadratic_Formula <- function(a,b,c){
-  
   delta <- b^2-4*a*c
   x1 = (-b+sqrt(delta))/(2*a)
   x2 = (-b-sqrt(delta))/(2*a)
@@ -90,7 +14,6 @@ Quadratic_Formula <- function(a,b,c){
 }
 
 quadraticRoots <- function(a, b, c) {
-  
   print(paste0("You have chosen the quadratic equation ", a, "x^2 + ", b, "x + ", c, "."))
   
   discriminant <- (b^2) - (4*a*c)
@@ -126,71 +49,9 @@ pearsonhartley <- function(phi,alpha,df1,df2) {
     p <- p+pbeta(y,j+df1/2,df2/2)*p1
   }
   1-p*exp(-b)
-  
 }
 
-state.name2abb <- function(state_vector) {
-  for (i in 1:length(state.name)) {
-    state_vector[state_vector==state.name[i]] <- state.abb[i]
-  }
-  return(state_vector)
-}
-
-MinMaxScaling <- function(x) {
-  minvalue <- min(x, na.rm = T)
-  maxvalue <- max(x, na.rm = T)
-  # maxvalue <- quantile(x, 0.995, na.rm = T)
-  return((x-minvalue)/(maxvalue-minvalue))
-}
-
-CoeffOfDivergence <- function(x,y) {
-  ii <- !is.na(x) & !is.na(y)
-  xx <- x[ii]
-  yy <- y[ii]
-  
-  return(sqrt(mean(((xx-yy)/(xx+yy))^2)))
-}
-
-# Create a function to move files from one directory to another using file.rename
-# In the process check if destination directory exists and if not, create one
-move.file <- function(from, to) {
-  todir <- dirname(to)
-  if (!isTRUE(file.info(todir)$isdir)) dir.create(todir, recursive=TRUE)
-  file.rename(from = from,  to = to)
-}
-
-match_rows <- function(row_match,row_raw) {
-  indicies <- vector(length=length(row_raw))
-  for (i in 1:length(row_raw)) {
-    indicies[i] <- which(row_match==row_raw[i])
-  }
-                     
-  return(indicies)
-}
-
-### wide table to narrow
-dataframe_reshape <- function(df) {
-  # the 1st column of input df is kept
-  # original df: time, column1, column2, ...
-  # reshaped df: time, ColumnName, value
-  
-  num_column_reshaped <- ncol(df)-1
-  ColumnName <- colnames(df)[2:ncol(df)]
-  
-  df2 <- data.frame(matrix(nrow = nrow(df)*num_column_reshaped, ncol=3))
-  colnames(df2) <- c('time','ColumnName','value')
-  
-  df2$time <- rep(df$time, each=num_column_reshaped)
-  df2$ColumnName <- rep(ColumnName, nrow(df))
-  df2$value <- c(t(as.matrix(df[,2:ncol(df)])))
-    
-  # for (i in 1:nrow(df)) {
-  #   df2[((i-1)*num_column_reshaped+1):i*num_column_reshaped,3] <- df[i,2:ncol(df)]
-  # }
-  
-  return(df2)
-}
-
+###################################### Timeseries ######################################
 ### calculate daily averages using hourly data
 Hourly2Daily <- function(hourlyData) {
   # hourlyData [time, site1, site2, ...]
@@ -213,8 +74,8 @@ Hourly2Daily <- function(hourlyData) {
   
 }
 
-##########################################################################################################
-##########################################################################################################
+###################################### Map Projection ######################################
+
 #####-------------------   START OF FUNCTION: LAMB_LATLON_TO_IJ         ------------------------------####
 # Cacluation of i and j index of a specified latitude and longitude for a given lambert conformal
 # projection.
@@ -341,10 +202,7 @@ polars_latlon_to_ij <- function(lat1, lon1, delx, truelat1, stdlon,
   
 }
 #####--------------------------	  END OF FUNCTION: POLARS_LATLON_TO_IJ  ------------------------------####
-##########################################################################################################
 
-##########################################################################################################
-##########################################################################################################
 #####-------------------   START OF FUNCTION: MERCAT_LATLON_TO_IJ       ------------------------------####
 # Cacluation of i and j index of a specified latitude and longitude for a given mercator projection.
 # Note: Calculations derived from Obsgrid Code
@@ -403,9 +261,7 @@ mercat_latlon_to_ij <- function(reflat, reflon, lat, lon, dx, stdlt1, lato, lono
   
 }
 #####--------------------------	  END OF FUNCTION: MERCAT_LATLON_TO_IJ  --------------------------------####
-##########################################################################################################
 
-##########################################################################################################
 #####-------------------   START OF FUNCTION: LATLON_LATLON_TO_IJ         ------------------------------####
 # Cacluation of i and j index of a specified latitude and longitude for a given lat-lon projection.
 # 
@@ -431,7 +287,6 @@ latlon_latlon_to_ij <- function(lat, lon, lato, lono) {
 }
 #####--------------------------	  END OF FUNCTION: LATLON_LATLON_TO_IJ  --------------------------------####
 
-##########################################################################################################
 #####--------------------------   START OF FUNCTION: CONE         ------------------------------------####
 #  Cone factor function
 # Input:
@@ -461,10 +316,7 @@ cone <-function(true1,true2,hemi=1) {
   
 }
 #####--------------------------	  END OF FUNCTION: CONE           ------------------------------------####
-##########################################################################################################
 
-# revise from mcip_surface() in MET_model.read.R
-##########################################################################################################
 #####--------------------------   START OF FUNCTION: MCIP_projection  ------------------------------------####
 #  Open MCIP output and extract grid information and surface met data for comparision to MADIS obs
 # Input:
@@ -574,4 +426,3 @@ mcip_projection <-function(gfile) {
   
 }
 #####--------------------------	  END OF FUNCTION: MCIP_projection     -----------------------------------####
-##########################################################################################################
